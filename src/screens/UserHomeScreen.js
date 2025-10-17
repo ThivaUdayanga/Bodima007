@@ -73,13 +73,24 @@ export default function UserHomeScreen({ navigation }) {
 
       {/* Bottom navigation bar */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => navigation.replace('Home')}
+        >
           <Ionicons name="home" size={22} color={PRIMARY} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
+
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => navigation.replace('Favourite')}
+        >
           <Ionicons name="heart-outline" size={22} color="#6b7280" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
+
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => navigation.replace('Profile')}
+        >
           <Ionicons name="person-outline" size={22} color="#6b7280" />
         </TouchableOpacity>
       </View>
@@ -92,7 +103,7 @@ const styles = StyleSheet.create({
     backgroundColor: PRIMARY,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 20,
     paddingVertical: 30,
   },
   circleBtn: {

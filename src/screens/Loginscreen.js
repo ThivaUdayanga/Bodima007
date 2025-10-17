@@ -48,9 +48,11 @@ export default function LoginScreen({ navigation }) {
     if (role === 'Admin') {
       navigation.replace('AdminDashboard'); 
       alert('Logged in as Admin');
-    } else {
+    } else if (role === 'User') {
       navigation.replace('Home');            
       alert('Logged in as User');
+    }else {
+      alert('Role not recognized');
     }
   } catch (e) {
     console.log(e);

@@ -28,6 +28,7 @@ export default function RegisterScreen({ navigation }) {
   const [role, setRole]         = useState('User'); // "User" | "Admin"
 
   const onRegister = async () => {
+    alert('Registering ...'); 
   try {
     if (!firstname || !lastname || !email || !password || !rpassword) {
       return alert('Please fill all required fields');

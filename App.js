@@ -9,6 +9,8 @@ import LoginScreen from './src/screens/Loginscreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import UserHomeScreen from './src/screens/UserHomeScreen';  // user dashboard
 import AdminDashboard from './src/screens/AdminHomeScreen';  // admin dashboard
+import UserFavouriteScreen from './src/screens/UserFavouritScreen';
+import UserProfileScreen from './src/screens/UserProfileScreen';
 
 function SplashScreen({ navigation }) {
   useEffect(() => {
@@ -40,6 +42,10 @@ export default function App() {
         {/* App routes used by Login redirect */}
         <Stack.Screen name="Home" component={UserHomeScreen} />
         <Stack.Screen name="AdminDashboard" component={AdminDashboard} />
+
+        {/*Other user screens*/}
+        <Stack.Screen name="Favourite" component={UserFavouriteScreen} />
+        <Stack.Screen name="Profile" component={UserProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
