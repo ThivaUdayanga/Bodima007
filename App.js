@@ -11,6 +11,7 @@ import UserHomeScreen from './src/screens/UserHomeScreen';  // user dashboard
 import AdminDashboard from './src/screens/AdminHomeScreen';  // admin dashboard
 import UserFavouriteScreen from './src/screens/UserFavouritScreen';
 import UserProfileScreen from './src/screens/UserProfileScreen';
+import CreatePostScreen from './src/screens/CreatePostScreen';
 
 function SplashScreen({ navigation }) {
   useEffect(() => {
@@ -46,6 +47,9 @@ export default function App() {
         {/*Other user screens*/}
         <Stack.Screen name="Favourite" component={UserFavouriteScreen} />
         <Stack.Screen name="Profile" component={UserProfileScreen} />
+
+        {/*create post screen*/}
+        <Stack.Screen name="CreatePost" component={CreatePostScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -24,7 +24,7 @@ export default function UserHomeScreen({ navigation }) {
         <TouchableOpacity
           style={styles.circleBtn}
           onPress={() => {
-            // navigation.navigate('PostProperty')
+            navigation.navigate('CreatePost')
           }}
         >
           <Ionicons name="add" size={22} color="#fff" />
@@ -32,15 +32,6 @@ export default function UserHomeScreen({ navigation }) {
 
         <Text style={styles.appTitle}>Bodima</Text>
 
-        {/* Right options icon (optional) */}
-        <TouchableOpacity
-          style={styles.circleBtn}
-          onPress={() => {
-            // navigation.navigate('Filters')
-          }}
-        >
-          <Ionicons name="options-outline" size={20} color="#fff" />
-        </TouchableOpacity>
       </View>
 
       {/* Search field */}
