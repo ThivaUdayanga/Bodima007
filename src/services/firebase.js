@@ -5,7 +5,7 @@ import {
   getReactNativePersistence,
 } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, collection, doc } from 'firebase/firestore';
 
 // ⬇️ paste your own config from Firebase console
 const firebaseConfig = {
@@ -23,4 +23,14 @@ const app = initializeApp(firebaseConfig);
 export const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(AsyncStorage),
 });
+
 export const db = getFirestore(app);
+
+// convenience refs
+export const postsCol = collection(db, 'Posts');
+export const postDoc  = (id) => doc(db, 'Posts', id);
+
+// user favourites as a subcollection: users/{uid}/favourites/{postId}
+export const userDoc  = (uid) => doc(db, 'users', uid);
+export const userFavouritesCol = (uid) => collection(db, 'users', uid, 'favourites');
+export const userFavouriteDoc  = (uid, postId) => doc(db, 'users', uid, 'favourites', postId);
