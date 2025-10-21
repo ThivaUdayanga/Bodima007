@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// src/screens/CreatePostScreen.js
+import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -8,7 +9,6 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   Image,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
@@ -16,17 +16,17 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 
 import { db, auth } from '../services/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, GeoPoint } from 'firebase/firestore';
 
 const PRIMARY = '#1f4582';
 const RADIUS = 10;
 
+// ---- Cloudinary (replace with your values) ----
 const CLOUD_NAME = 'dpdqogegn';
 const UPLOAD_PRESET = 'unsigned_post';
 const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
 
 async function uploadToCloudinary(uri) {
-  // Ensure the file has a proper mime and filename
   const data = new FormData();
   data.append('file', {
     uri,
@@ -35,82 +35,97 @@ async function uploadToCloudinary(uri) {
   });
   data.append('upload_preset', UPLOAD_PRESET);
 
-  const res = await fetch(CLOUDINARY_URL, {
-    method: 'POST',
-    body: data,
-  });
-
+  const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: data });
   const json = await res.json();
-  if (!res.ok) {
-    throw new Error(json.error?.message || 'Image upload failed');
-  }
-  return json.secure_url; // HTTPS URL
+  if (!res.ok) throw new Error(json.error?.message || 'Image upload failed');
+  return json.secure_url;
 }
 
-export default function CreatePostScreen({ navigation }) {
+export default function CreatePostScreen({ navigation, route }) {
+  // form state
   const [type, setType] = useState('For Boys');
   const [price, setPrice] = useState('');
   const [contact, setContact] = useState('');
   const [space, setSpace] = useState('');
-  const [location, setLocation] = useState('');
+  const [location, setLocation] = useState('');       // human-readable address
+  const [coords, setCoords] = useState(null);         // { lat, lng } | null
   const [description, setDescription] = useState('');
-  const [images, setImages] = useState([null, null, null]); // up to 3
+  const [images, setImages] = useState([null, null, null]); // up to 3 images
+  const [submitting, setSubmitting] = useState(false);
+
+  // receive selection back from MapPicker
+  useEffect(() => {
+    const p = route?.params;
+    if (!p) return;
+    if (p.locationText) setLocation(p.locationText);
+    if (p.coords) setCoords(p.coords); // { lat, lng }
+  }, [route?.params]);
 
   const pickImage = async (index) => {
-  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (status !== 'granted') {
-    alert('We need photo library permission to pick images.');
-    return;
-  }
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    allowsEditing: true,
-    quality: 0.85,
-  });
-  if (!result.canceled) {
-    const uri = result.assets[0].uri;
-    setImages((prev) => {
-      const next = [...prev];
-      next[index] = uri;
-      return next;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      alert('We need photo library permission to pick images.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.85,
     });
-  }
-};
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      setImages((prev) => {
+        const next = [...prev];
+        next[index] = uri;
+        return next;
+      });
+    }
+  };
 
-const onCreatePost = async () => {
-  // basic validation
-  if (!price || !contact || !space || !location) {
-    alert('Please fill all required fields (price, contact, space, location).');
-    return;
-  }
-
-  try {
-    const uid = auth?.currentUser?.uid || null;
-
-    // 1) Upload selected images to Cloudinary
-    const chosen = images.filter(Boolean); // remove nulls
-    const urls = await Promise.all(chosen.map((u) => uploadToCloudinary(u)));
-
-    // 2) Save a single doc in Firestore (collection "Posts")
-    await addDoc(collection(db, 'Posts'), {
-      type,
-      price,
-      contact,
-      space,
-      location,
-      description,
-      images: urls,
-      ownerId: uid,
-      createdAt: serverTimestamp(),
+  const onPickLocation = () => {
+    navigation.navigate('MapPicker', {
+      locationText: location || '',
+      coords: coords || null,
     });
+  };
 
-    alert('Post created!');
-    // navigation.replace('Home') or goBack
-  } catch (err) {
-    console.log(err);
-    alert(err.message);
-  }
-};
+  const onCreatePost = async () => {
+    if (!price || !contact || !space || !location) {
+      alert('Please fill all required fields (price, contact, space, location).');
+      return;
+    }
+    try {
+      setSubmitting(true);
+      const uid = auth?.currentUser?.uid || null;
+
+      // upload chosen images
+      const chosen = images.filter(Boolean);
+      const urls = await Promise.all(chosen.map((u) => uploadToCloudinary(u)));
+
+      // save to Firestore
+      await addDoc(collection(db, 'Posts'), {
+        type,
+        price,
+        contact,
+        space,
+        location, // keep legacy text field too
+        locationText: (location || '').trim(),
+        coords: coords ? new GeoPoint(coords.lat, coords.lng) : null,
+        description,
+        images: urls,
+        ownerId: uid,
+        createdAt: serverTimestamp(),
+      });
+
+      alert('Post created!');
+      navigation.replace('Home');
+    } catch (err) {
+      console.log(err);
+      alert(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -168,14 +183,19 @@ const onCreatePost = async () => {
             onChangeText={setSpace}
           />
 
-          {/* Location */}
-          <TextInput
-            style={styles.input}
-            placeholder="Location"
-            placeholderTextColor="#9aa3af"
-            value={location}
-            onChangeText={setLocation}
-          />
+          {/* Location (short input + square button) */}
+          <View style={styles.locationRow}>
+            <TextInput
+              style={[styles.input, styles.locationInput]}
+              placeholder="Location"
+              placeholderTextColor="#9aa3af"
+              value={location}
+              onChangeText={setLocation}
+            />
+            <TouchableOpacity onPress={onPickLocation} style={styles.locBtn} activeOpacity={0.85}>
+              <Ionicons name="location" size={20} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
 
           {/* Description */}
           <TextInput
@@ -197,7 +217,10 @@ const onCreatePost = async () => {
                 activeOpacity={0.8}
               >
                 {images[i] ? (
-                  <Image source={{ uri: images[i] }} style={{ width: '100%', height: '100%', borderRadius: 8 }} />
+                  <Image
+                    source={{ uri: images[i] }}
+                    style={{ width: '100%', height: '100%', borderRadius: 8 }}
+                  />
                 ) : (
                   <Ionicons name="camera" size={24} color="#6b7280" />
                 )}
@@ -206,8 +229,13 @@ const onCreatePost = async () => {
           </View>
 
           {/* Submit */}
-          <TouchableOpacity style={styles.cta} onPress={onCreatePost} activeOpacity={0.85}>
-            <Text style={styles.ctaText}>Create Post</Text>
+          <TouchableOpacity
+            style={[styles.cta, submitting && { opacity: 0.6 }]}
+            disabled={submitting}
+            onPress={onCreatePost}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.ctaText}>{submitting ? 'Saving…' : 'Create Post'}</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -229,7 +257,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     flex: 1,
     textAlign: 'center',
-    marginRight: 30, // to visually center with back icon
+    marginRight: 30,
   },
   body: {
     flex: 1,
@@ -244,6 +272,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#f7f8fa',
     paddingHorizontal: 14,
     marginBottom: 12,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  locationInput: {
+    flex: 1,
+    marginRight: 8,
+    marginBottom: 0,
+  },
+  locBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#c7d2fe',
+    backgroundColor: PRIMARY,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   imageRow: {
     flexDirection: 'row',

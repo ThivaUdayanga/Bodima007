@@ -11,7 +11,8 @@ import UserHomeScreen from './src/screens/UserHomeScreen';  // user dashboard
 import AdminDashboard from './src/screens/AdminHomeScreen';  // admin dashboard
 import UserFavouriteScreen from './src/screens/UserFavouritScreen';
 import UserProfileScreen from './src/screens/UserProfileScreen';
-import CreatePostScreen from './src/screens/CreatePostScreen';
+import CreatePostScreen from './src/screens/CreatePostScreen'; 
+import MapPickerScreen from './src/screens/MapPickerScreen';
 
 function SplashScreen({ navigation }) {
   useEffect(() => {
@@ -50,6 +51,8 @@ export default function App() {
 
         {/*create post screen*/}
         <Stack.Screen name="CreatePost" component={CreatePostScreen} />
+
+        <Stack.Screen name="MapPicker" component={MapPickerScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
