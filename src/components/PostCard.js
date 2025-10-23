@@ -1,5 +1,5 @@
 // src/components/PostCard.js
-import React, { useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   View, Text, Image, StyleSheet, TouchableOpacity, FlatList, Linking,
 } from 'react-native';
@@ -17,38 +17,65 @@ export default function PostCard({
   onBoost,          // () => void
 }) {
   const [idx, setIdx] = useState(0);
+  const [cardW, setCardW] = useState(null); // measure actual card width
+  const listRef = useRef(null);
 
-  const images = Array.isArray(post.images) && post.images.length > 0
-    ? post.images.slice(0, 3)
-    : [null];
+  // --- normalize images coming from Firestore (array, string, undefined)
+  const images = useMemo(() => {
+    let arr = [];
+    if (Array.isArray(post?.images)) arr = post.images;
+    else if (typeof post?.images === 'string' && post.images.trim()) arr = [post.images.trim()];
+    // only keep truthy strings
+    arr = arr.filter(u => typeof u === 'string' && u.startsWith('http'));
+    if (arr.length === 0) return [null]; // placeholder
+    return arr.slice(0, 3);
+  }, [post?.images]);
 
-  const phone = String(post.contact || '').trim();
+  const phone = String(post?.contact || '').trim();
 
   return (
-    <View style={[styles.card, variant === 'feed' && { borderColor: '#1d4ed8' }]}>
+    <View
+      style={[styles.card, variant === 'feed' && { borderColor: '#1d4ed8' }]}
+      onLayout={(e) => setCardW(e.nativeEvent.layout.width)}
+    >
       {/* Images carousel */}
-      <FlatList
-        data={images}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={(_, i) => String(i)}
-        onMomentumScrollEnd={(e) => {
-          const i = Math.round(e.nativeEvent.contentOffset.x / e.nativeEvent.layoutMeasurement.width);
-          setIdx(i);
-        }}
-        renderItem={({ item }) => (
-          <View style={styles.imageWrap}>
-            {item ? (
-              <Image source={{ uri: item }} style={styles.image} />
-            ) : (
-              <View style={[styles.image, styles.imagePlaceholder]}>
-                <Ionicons name="image" size={28} color="#9ca3af" />
+      <View style={{ width: '100%', height: 170 }}>
+        {cardW && (
+          <FlatList
+            ref={listRef}
+            data={images}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(_, i) => String(i)}
+            getItemLayout={(_, i) => ({
+              length: cardW,
+              offset: cardW * i,
+              index: i,
+            })}
+            onMomentumScrollEnd={(e) => {
+              const i = Math.round(e.nativeEvent.contentOffset.x / cardW);
+              setIdx(i);
+            }}
+            renderItem={({ item }) => (
+              <View style={{ width: cardW, height: 170 }}>
+                {item ? (
+                  <Image
+                    source={{ uri: item }}
+                    style={styles.image}
+                    progressiveRenderingEnabled
+                  />
+                ) : (
+                  <View style={[styles.image, styles.imagePlaceholder]}>
+                    <Ionicons name="image" size={28} color="#9ca3af" />
+                  </View>
+                )}
               </View>
             )}
-          </View>
-        )}
-      />
+          />
+
+        )};
+      </View>
 
       {/* dots */}
       <View style={styles.dots}>
@@ -60,7 +87,7 @@ export default function PostCard({
       {/* Body */}
       <View style={styles.body}>
         <View style={styles.row}>
-          <Text style={styles.location}>{post.location || '—'}</Text>
+          <Text style={styles.location}>{post?.location || '—'}</Text>
           <View style={styles.row}>
             <Ionicons name="location-outline" size={14} color="#6b7280" />
           </View>
@@ -68,17 +95,16 @@ export default function PostCard({
 
         <View style={styles.rowSpace}>
           <Text style={styles.price}>
-            {post.price ? `LKR ${Number(post.price).toFixed(2)}` : 'LKR —'}
-            {post.per ? ` (${post.per})` : ''}
+            {post?.price ? `LKR ${Number(post.price).toFixed(2)}` : 'LKR —'}
+            {post?.per ? ` (${post.per})` : ''}
           </Text>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={styles.typeText}>{post.type || '—'}</Text>
-            <Text style={styles.spaceText}>{post.space ? `${post.space} person` : ''}</Text>
+            <Text style={styles.typeText}>{post?.type || '—'}</Text>
+            <Text style={styles.spaceText}>{post?.space ? `${post.space} person` : ''}</Text>
           </View>
         </View>
 
-        {/* description */}
-        {!!post.description && (
+        {!!post?.description && (
           <Text numberOfLines={2} style={styles.desc}>
             {post.description} <Text style={{ color: PRIMARY }}>…see more</Text>
           </Text>
@@ -87,8 +113,12 @@ export default function PostCard({
         {/* Footer (variant-specific) */}
         {variant === 'feed' ? (
           <View style={[styles.rowSpace, { marginTop: 10 }]}>
-            <TouchableOpacity onPress={() => onToggleFavorite?.(post.id)} style={styles.iconBtn}>
-              <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={24} color={isFavorite ? '#e11d48' : '#6b7280'} />
+            <TouchableOpacity onPress={() => onToggleFavorite?.(post?.id)} style={styles.iconBtn}>
+              <Ionicons
+                name={isFavorite ? 'heart' : 'heart-outline'}
+                size={24}
+                color={isFavorite ? '#e11d48' : '#6b7280'}
+              />
             </TouchableOpacity>
 
             {phone ? (
@@ -126,7 +156,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginVertical: 8,
   },
-  imageWrap: { width: '100%' },
   image: { width: '100%', height: 170, resizeMode: 'cover' },
   imagePlaceholder: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#eef2ff' },
   dots: { flexDirection: 'row', alignSelf: 'center', marginTop: 6 },

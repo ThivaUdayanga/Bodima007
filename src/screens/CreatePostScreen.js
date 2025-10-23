@@ -55,10 +55,10 @@ export default function CreatePostScreen({ navigation, route }) {
 
   // receive selection back from MapPicker
   useEffect(() => {
-    const p = route?.params;
-    if (!p) return;
-    if (p.locationText) setLocation(p.locationText);
-    if (p.coords) setCoords(p.coords); // { lat, lng }
+    if (!route?.params) return;
+    const { locationText, coords: c } = route.params;
+    if (locationText) setLocation(locationText);
+    if (c) setCoords(c); // { lat, lng }
   }, [route?.params]);
 
   const pickImage = async (index) => {

@@ -7,7 +7,6 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFirestore, collection, doc } from 'firebase/firestore';
 
-// ⬇️ paste your own config from Firebase console
 const firebaseConfig = {
   apiKey: "AIzaSyBg15yJGvj8oNoLoQDC026_J5IMt_moP-k",
   authDomain: "bodima-react-native.firebaseapp.com",

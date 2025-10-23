@@ -40,13 +40,6 @@ export default function AdminDashboard({ navigation }) {
         >
           <Text style={styles.btnText}>Manage Users</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={BTN}
-          onPress={() => navigation.navigate('ManagePosts')}
-        >
-          <Text style={styles.btnText}>Manage Posts</Text>
-        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
